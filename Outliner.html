@@ -1,0 +1,251 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=shift_jis">
+<title>Outliner</title>
+<script src="/src/mootools-core.js" type="text/javascript"></script>
+<script src="/src/showdown.js" type="text/javascript"></script>
+<style type="text/css">
+<!--
+
+html, body { margin:0; padding:0;overflow:hidden; }
+
+#edit {
+	width:25%;
+	float:right;
+	border-left:1px solid #000;
+	position:absolute;
+	right:0px;
+}
+
+#editor,
+#css_editor,
+#source {
+	margin:0;
+	padding:25px;
+	border:none;
+	width:100%;
+	height:1.0em;
+	margin:0;
+	padding:0;
+	border-bottom:1px solid #000;
+	background:#FFF;
+	color:#339999;
+	resize:none;
+}
+#css_editor {
+	background:#FFF;
+	color:#FF3366;
+}
+#source {
+	background:#FFF;
+	color:#999999;
+}
+
+#out {
+	width:75%;
+	float:left;
+}
+#render {
+	overflow:scroll-y;
+}
+iframe {
+	width:100%;
+	border:none;
+	border-bottom:1px solid #000;
+}
+
+-->
+</style>
+</head>
+
+<body>
+<div id="edit">
+<textarea id="editor">
+
+Outliner
+========
+
+## About
+
+* Outline Editor
+* [Markdown](http://daringfireball.net/projects/markdown/syntax.php) (Renderer|Parser)
+* CSS Renderer
+
+## Usage
+
+* Edit
+ * right-top : Markdown
+ * right-bottom : CSS
+* Output
+ * left-top : HTML Preview 
+ * left-bottom : HTML Source
+
+## Markdown
+
+    Header
+    ======
+
+    # Header
+
+    ## Header
+
+    1. List
+    2. List
+    3. List
+
+    * List
+    * List
+    * List
+     * List
+     * List
+
+    > Blockquote
+    > Blockquote
+    >> Blockquote
+    >> Blockquote
+
+## Powered by
+
+* [MooTools](http://mootools.net/) - a compact javascript framework
+* [showdown](http://attacklab.net/) - a JavaScript port of Markdown 
+
+</textarea>
+<textarea id="css_editor">
+
+* {
+ font-size:100%;
+}
+
+html, body {
+ margin:0;
+ padding:0;
+}
+html {
+}
+body {
+ font-family: Arial, Helvetica;
+ padding: 1.0em;
+}
+
+
+ 
+h1, h2, h3, h4, h5, h6 {
+ font-weight:bold;
+ padding:0;
+ margin: 0 0 0.5em 0;
+}
+
+h1 {
+ border-bottom:1px solid #666;
+ font-size:1.5em;
+}
+
+h2 { 
+ border-left:4px solid #333;
+ background:#666;
+ color:#FFF;
+ padding:2px 5px;
+}
+
+h3 {
+ color:#333;
+ border-left:2px solid #333;
+ padding:0 5px;
+}
+
+h4 {
+ font-size:0.8em;
+ color:#666;
+ border-bottom:1px solid #333;
+}
+
+p {
+}
+
+ul, ol {
+ font-size:0.8em;
+ padding: 1.0em 2.5em;
+}
+
+ul li,
+ol li {
+}
+
+pre code {
+ display:block;
+ padding:5px;
+ border:1px solid #666;
+}
+
+</textarea>
+</div>
+<div id="out">
+<iframe id="render" src="./empty.html" frameborder="0"></iframe>
+<textarea id="source"></textarea>
+</div>
+</body>
+<script type="text/javascript">
+<!--
+
+Showdown.converter();
+
+function onChange(textarea, callback) {
+	var element = $(textarea);
+	var strage = element.getProperty('value');
+	(function() {
+		if(strage != element.getProperty('value')) {
+			callback.apply(element, [element.getProperty('value')]);
+			strage = element.getProperty('value');
+		}
+	}).periodical(100);
+}
+
+var $f = function() {
+	return $('render').contentWindow;
+}
+
+var setHtml = function(value) {
+	var html = Showdown.makeHtml(value);
+	$f().document.getElement('body').set('html', html);
+	$('source').setProperty('value', html);
+}
+
+var setCSS = function(css) {
+	$f().$('css_render').dispose();
+	$f().document.getElement('head').adopt(new Element('style', {
+		type : 'text/css',
+		id : 'css_render'
+	}).set('text', css));
+}
+
+var resize = function() {
+	var w = window.getWidth();
+	$('edit').setStyle('width', (w / 4).toInt() - 1);
+	$('out').setStyle('width', (w * 0.75).toInt());
+	var h = window.getHeight();
+	$('editor').setStyle('height', (h * 0.75).toInt() - 1);
+	$('css_editor').setStyle('height', (h / 4).toInt() - 1);
+	$('render').setStyle('height', (h * 0.75).toInt() - 1);
+	$('source').setStyle('height', (h / 4).toInt());
+}
+
+var render_ready = function(){
+	setHtml($('editor').getProperty('value'));
+	setCSS($('css_editor').getProperty('value'));
+}
+
+onChange('editor', setHtml);
+
+onChange('css_editor', setCSS);
+
+$('editor').select();
+
+resize();
+
+window.addEvent('resize', resize);
+
+//-->
+</script>
+</html>

@@ -1,0 +1,284 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	<title>Tumblr Cascade</title>
+	<style type="text/css">
+* {
+ font-size:100%;
+}
+
+html, body {
+ margin:0;
+ padding:0;
+}
+body {
+ overflow-x:hidden;
+ background:#000;
+ color:#FFF;
+}
+
+#head {
+ opacity:0.6;
+ -moz-opacity:0.6;
+ -webkit-opacity:0.6;
+ z-index:2500;
+ font-size:0.8em;
+ position:fixed;
+ left:5px;
+ bottom:5px;
+ background:#000;
+ padding:1.5em;
+ text-align:left;
+}
+#head h1 {
+ margin:0;
+ padding:0;
+ font-size:2.0em;
+}
+#head #description {
+  margin:0;
+  padding:0.5em 0;
+}
+#head p {
+  margin:0;
+  padding:0;
+}
+#head a {
+ color:#FFF;
+}
+#head a:hover {
+ color:#FF0;
+}
+#description {
+ color:#FFF;
+}
+
+.navigation {
+ font-size:1.5em;
+ text-align:center;
+}
+.navigation a {
+ border-top:2px solid #666;
+ border-bottom:2px solid #666;
+ background:#000;
+ display:block;
+ padding:0.5em;
+ color:#FFF;
+ background:#000;
+}
+.navigation a:hover {
+ color:#000;
+ background:#FF0;
+}
+
+.post {
+ position:relative;
+}
+
+.photo {
+ font-size:3.0em;
+}
+
+.quote {
+}
+.quote blockquote {
+ margin:0;
+ padding:1.0em;
+ font-size:5.0em;
+ line-height:0.8em;
+ letter-spacing:-0.11em;
+}
+.quote .source {
+ padding:1.0em;
+ text-align:center;
+ font-size:0.8em;
+}
+.quote .source a {
+ color:#FFF;
+}
+
+.video {
+ padding:50px;
+ text-align:center;
+}
+
+.date {
+ border-bottom:2px solid #FF0;
+ font-size:0.5em;
+ color:#FFF;
+ background:#000;
+ padding:1.2em;
+}
+.date a {
+ color:#fff;
+}
+
+a img {
+ border:none;
+}
+.caption {
+ display:none;
+}
+
+#copyright {
+  position:fixed;
+  right:2px;
+  bottom:2px;
+  color:#FFF;
+  z-index:2501;
+  font-size:0.8em;
+}
+#copyright p {
+  margin:0;
+  padding:0;
+}
+#copyright a {
+  color:#FFF;
+}
+
+#setusername {
+  font-size:2.0em;
+  text-align:center;
+  margin:3.0em auto;
+ padding:1.0em;
+}
+#setusername p {
+ margin:0;
+ padding:1.0em;
+ line-height:2.5em;
+}
+#setusername input {
+  width:5.0em;
+  font-size:0.8em;
+  border:none;
+}
+
+
+	</style>
+<script src="http://ajax.googleapis.com/ajax/libs/mootools/1.2.1/mootools-yui-compressed.js" type="text/javascript" charset="utf-8"></script>
+<script type="text/javascript" charset="utf-8">
+
+var username = /tumblr.html\?(.+)/.test(location.href) ? RegExp.$1 : "";
+var api_base = "http://#{username}.tumblr.com/api/read/json".replace(/#{username}/, username);
+var count = 0;
+
+var callback = null;
+
+function api_callback(data) {
+	callback(data);
+	callback = null;
+	count = count + 50;
+};
+
+function api_read(callback) {
+	if(!window.callback) {
+		window.callback = callback;
+		document.getElement('head').appendChild(new Element('script', {
+			src : api_base + "?callback=api_callback&num=50&start=" + count,
+			type : "text/javascript"
+		}));
+	} else {
+		api_read.delay(1000, callback);
+	}
+};
+
+function load_nextpage() {
+	api_read(function(data){
+		tumblelog = data.tumblelog;
+		var h1 = document.getElement('h1 a')
+		h1.innerHTML = tumblelog.title;
+		h1.set('href', "http://" + username + ".tumblr.com/");
+		document.getElement('#description').innerHTML = tumblelog.description;
+    data['posts'].filter(function(post){return post['type'].test(/(photo|quote)/)}).each(function(post){
+			var post_element = new Element('div').addClass('post');
+			post_element.appendChild(new Element('div', {text:post['date']}).addClass('date'));
+			var html = "";
+			switch(post['type']) {
+				case 'photo' :
+					html = $('temp_photo').get('value').replace(/#{imageurl}/g, post['photo-url-highres'] || post['photo-url-500']);
+				break;
+				case 'quote' :
+					html = $('temp_quote').get('value').replace(/#{quote-text}/g, post['quote-text']).replace(/#{quote-source}/g, post['quote-source']);
+				break;
+			}
+			var post_body = new Element('div');
+			post_body.innerHTML = html;
+			post_element.appendChild(post_body);
+			$('posts').appendChild(post_element);
+		});
+	});
+}
+
+window.addEvent('domready', function() {
+    if(username) {
+      $('setusername').destroy();
+      load_nextpage();
+      (function () {
+	      window.scrollTo(0, document.getElement('body').getScroll()['y'] + 1);
+      }).periodical(5);
+   } else {
+      $('start').addEvent('click', function() {
+        location.href = location.href + "?" + $('username').get('value');
+      });
+    }
+});
+
+window.addEvent('scroll', function(event){
+	var win_h = document.getElement('body').getSize()['y'];
+	var total_h = document.getElement('#heightcheck').getSize()['y'];
+	var a_scroll = document.getElement('body').getScroll()['y'];
+	if(total_h - a_scroll - win_h < 300) load_nextpage();
+});
+
+</script>
+</head>
+
+<body>
+<div id="heightcheck">
+
+<div id="head">
+<h1><a href=""></a></h1>
+<div id="description"></div>
+</div>
+
+<div id="setusername">
+  <p>
+  <input id="username" type="text" size="20">.tumblr.com<br>
+    <button id="start">Cascade</button>
+  </p>
+</div>
+        
+<div id="posts"></div>
+
+<div id="copyright">
+<p><a href="/tumblr.html">Tumblr Cascade</a> by <a href="http://twitter.com/closer009">closer</a></p>
+</div>
+
+<textarea id="temp_photo" style="display:none;">
+<div class="photo" style="background-image:url(#{imageurl})">
+<img src="#{imageurl}" alt=""/>
+</div>
+</textarea>
+
+<textarea id="temp_quote" style="display:none;">
+<div class="quote">
+<blockquote>#{quote-text}</blockquote>
+<div class="source">#{quote-source}</div>
+</div>
+</textarea>
+
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+try {
+var pageTracker = _gat._getTracker("UA-333086-9");
+pageTracker._trackPageview();
+} catch(err) {}</script>
+
+</div>
+</body>
+</html>
